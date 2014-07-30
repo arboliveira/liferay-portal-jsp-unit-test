@@ -101,7 +101,6 @@ public class TaglibUIDiscussion_page_jsp_Test
 	public void setUp() throws Exception {
 		MockitoAnnotations.initMocks(this);
 
-		engine.setResourceBase("/Users/arbo/git/liferay-portal/portal-web/docroot");
 		engine.setURI("/html/taglib/ui/discussion/page.jsp");
 
 		liferayJSP.setUp();

@@ -83,7 +83,6 @@ public class PortletBlogs_view_entry_Jsp_Test
 
 	@Before
 	public void setUp() throws Exception {
-		engine.setResourceBase("/Users/arbo/git/liferay-portal/portal-web/docroot");
 		engine.setURI("/html/portlet/blogs/view_entry.jsp");
 
 		MockitoAnnotations.initMocks(this);

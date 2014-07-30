@@ -71,6 +71,8 @@ public class LiferayJSPTestSetUp {
 	public void setUp() throws Exception {
 		MockitoAnnotations.initMocks(this);
 
+		engine.setResourceBase(PortalMasterProjectLocation.getDocroot());
+
 		themeDisplay = new ThemeDisplay();
 		themeDisplay.setUser(user);
 
