@@ -18,6 +18,7 @@ import org.powermock.core.classloader.annotations.PrepareOnlyThisForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
+import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.JavaConstants;
 import com.liferay.portal.util.test.RandomTestUtil;
 import com.liferay.portlet.PortletURLUtil;
@@ -85,7 +86,9 @@ public class PortletBlogs_view_entry_content_Jsp_Test
 		ResponseContent response = engine.execute();
 
 		response.assertContains(
-			"<a href=\"portletURL#blogsCommentsPanelContainer\" >"
+			"<a href=\"" +
+				HtmlUtil.escapeAttribute("portletURL#blogsCommentsPanelContainer") +
+				"\" >"
 				+ rendered
 				+ "</a>");
 	}

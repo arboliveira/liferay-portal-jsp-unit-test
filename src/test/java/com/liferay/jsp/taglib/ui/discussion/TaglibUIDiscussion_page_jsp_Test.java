@@ -30,6 +30,7 @@ import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.Http;
 import com.liferay.portal.kernel.util.HttpUtil;
 import com.liferay.portal.model.Company;
@@ -204,16 +205,18 @@ public class TaglibUIDiscussion_page_jsp_Test
 			body +
 			"</textarea>");
 
+		String href = HtmlUtil.escapeAttribute(
+			"javascript:if (confirm(" +
+				"'are-you-sure-you-want-to-delete-this'" +
+				")) { " +
+				randomNamespace +
+				"deleteMessage(" +
+				messagesCount +
+				"); } else { self.focus(); }");
+
 		response.assertLookingAt(".*" +
 			Pattern.quote(
-				"<a href=\"javascript:if (confirm(" +
-					"&#039;are-you-sure-you-want-to-delete-this&#039;" +
-					")) { " +
-					randomNamespace +
-					"deleteMessage(" +
-					messagesCount +
-					"); } else { self.focus(); }\" " +
-					"class=\" taglib-icon\" id=\"") +
+				"<a href=\"" + href + "\" class=\" taglib-icon\" id=\"") +
 			"........" +
 			Pattern.quote(
 				"\" >" +
