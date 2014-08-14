@@ -94,7 +94,7 @@ public class LiferayJSPTestSetUp {
 		setUpPortletURLUtil();
 
 		tester.setAttribute("renderRequest", liferayPortletRequest);
-		tester.setAttribute("renderResponse", new MockRenderResponse());
+		tester.setAttribute("renderResponse", renderResponse);
 
 		setUpHtmlUtil();
 
@@ -294,7 +294,7 @@ public class LiferayJSPTestSetUp {
 	Props props;
 
 	@Mock
-	Portal portal;
+	public Portal portal;
 
 	public LiferayPortletRequest liferayPortletRequest;
 
@@ -309,5 +309,7 @@ public class LiferayJSPTestSetUp {
 	public User user;
 
 	private JSPTestEngine engine;
+
+	public MockRenderResponse renderResponse = new MockRenderResponse();
 
 }
