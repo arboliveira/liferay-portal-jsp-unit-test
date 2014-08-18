@@ -1,12 +1,12 @@
 
 package com.liferay.jsp.taglib.ui.discussion;
 
+import static com.liferay.jsp.taglib.ui.discussion.TaglibUIDiscussion_view_message_thread_jsp_TestHelper.depthEvidence;
+import static com.liferay.jsp.taglib.ui.discussion.TaglibUIDiscussion_view_message_thread_jsp_TestHelper.hrefEvidence;
+import static com.liferay.jsp.taglib.ui.discussion.TaglibUIDiscussion_view_message_thread_jsp_TestHelper.messageURLEvidence;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.powermock.api.mockito.PowerMockito.mockStatic;
-import static org.powermock.api.support.membermodification.MemberMatcher.method;
-import static org.powermock.api.support.membermodification.MemberModifier.stub;
 
 import java.text.DateFormat;
 import java.text.FieldPosition;
@@ -16,7 +16,6 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
 
-import javax.portlet.ResourceURL;
 import javax.servlet.http.HttpServletRequest;
 
 import org.hamcrest.CoreMatchers;
@@ -25,14 +24,11 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.powermock.core.classloader.annotations.PowerMockIgnore;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
-import com.liferay.portal.kernel.settings.SettingsFactory;
-import com.liferay.portal.kernel.settings.SettingsFactoryUtil;
 import com.liferay.portal.kernel.util.FastDateFormatFactory;
 import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.StringPool;
@@ -65,12 +61,10 @@ public class TaglibUIDiscussion_view_message_thread_jsp_Test
 		engine.setURI("/html/taglib/ui/discussion/view_message_thread.jsp");
 
 		liferayJSP.setUp();
+		vmth.setUp();
 
-		setUpMBSettings();
-		setUpResourceURL();
 		setUpFastDateFormatFactoryUtil();
 		setUpMBMessage();
-		setUpPathThemeImages();
 	}
 
 	@Override
@@ -123,7 +117,7 @@ public class TaglibUIDiscussion_view_message_thread_jsp_Test
 
 		render();
 
-		assertNotContains(pathThemeImages);
+		assertNotContains(vmth.pathThemeImages);
 	}
 
 	@Test
@@ -330,7 +324,7 @@ public class TaglibUIDiscussion_view_message_thread_jsp_Test
 
 		render();
 
-		assertContains(imgEvidence(expectedPng));
+		assertContains(vmth.imgEvidence(expectedPng));
 	}
 
 	private MBMessage mockMBMessage(long messageId) {
@@ -353,10 +347,6 @@ public class TaglibUIDiscussion_view_message_thread_jsp_Test
 		return messageURL;
 	}
 
-	private String messageURLEvidence(String namespace, long messageId) {
-		return "#" + namespace + "message_" + messageId;
-	}
-
 	private void assertContains(String s) {
 		c.assertContains(s);
 	}
@@ -370,25 +360,8 @@ public class TaglibUIDiscussion_view_message_thread_jsp_Test
 		assertContains(hrefEvidence(rowHREF, anchor));
 	}
 
-	private String depthEvidence(int expectedPaddingLeft) {
-		return "<td class=\"table-cell\" style=\"padding-left: " +
-			expectedPaddingLeft +
-			"px; width: 90%\">";
-	}
-
-	private String hrefEvidence(String href, String anchor) {
-		return "<a href=\"" + href + "\">" + anchor + "</a>";
-	}
-
-	private String imgEvidence(String png) {
-		return "<img alt=\"\" src=\"" + pathThemeImages +
-			"/message_boards/" +
-			png + ".png\" />";
-	}
-
 	private String messageCell(int paddingLeft, String png, long messageId) {
-		return depthEvidence(paddingLeft) + imgEvidence(png)
-			+ hrefEvidence(messageURLEvidence("", messageId), "null");
+		return vmth.messageCell(paddingLeft, png, messageId);
 	}
 
 	private void setUpFastDateFormatFactoryUtil() {
@@ -396,31 +369,9 @@ public class TaglibUIDiscussion_view_message_thread_jsp_Test
 		new FastDateFormatFactoryUtil().setFastDateFormatFactory(fastDateFormatFactory);
 	}
 
-	private void setUpPathThemeImages() {
-		pathThemeImages = RandomTestUtil.randomString();
-		liferayJSP.themeDisplay.setPathThemeImages(pathThemeImages);
-	}
-
-	private void setUpResourceURL() {
-		when(liferayJSP.liferayPortletResponse.createResourceURL()).thenReturn(
-			mock(ResourceURL.class));
-	}
-
 	private void setUpMBMessage() {
 		whenGetModifiedDate(mbMessage, new Date());
 		whenGetChildrenRange(mbMessage, 0, 0);
-	}
-
-	private void setUpMBSettings() {
-		new SettingsFactoryUtil().setSettingsFactory(settingsFactory);
-
-		mockStatic(MBSettings.class, Mockito.CALLS_REAL_METHODS);
-
-		MBSettings mbSettings = Mockito.mock(MBSettings.class);
-
-		stub(method(MBSettings.class, "getInstance",
-			Long.TYPE
-			)).toReturn(mbSettings);
 	}
 
 	private boolean guardAgainstRecursion;
@@ -431,18 +382,16 @@ public class TaglibUIDiscussion_view_message_thread_jsp_Test
 
 	private LiferayJSPTestSetUp liferayJSP = new LiferayJSPTestSetUp(engine);
 
+	private TaglibUIDiscussion_view_message_thread_jsp_TestHelper vmth =
+		new TaglibUIDiscussion_view_message_thread_jsp_TestHelper(liferayJSP);
+
 	@Mock
 	private MBMessage mbMessage;
 
 	@Mock
 	private FastDateFormatFactory fastDateFormatFactory;
 
-	private String pathThemeImages;
-
 	private boolean _lastNode;
-
-	@Mock
-	private SettingsFactory settingsFactory;
 
 	@Mock
 	private MBTreeWalker mbTreeWalker;

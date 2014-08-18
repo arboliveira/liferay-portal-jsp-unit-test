@@ -1,10 +1,11 @@
 
 package com.liferay.test.jsp;
 
+import static org.hamcrest.core.IsNot.not;
+import static org.hamcrest.core.StringContains.containsString;
 import static org.junit.Assert.assertThat;
 
 import org.hamcrest.Matcher;
-import org.hamcrest.core.StringContains;
 
 import com.liferay.test.junit.StringLookingAt;
 
@@ -27,7 +28,11 @@ public class ResponseContent {
 	}
 
 	public void assertContains(String substring) {
-		assertThat(content, StringContains.containsString(substring));
+		assertThat(content, containsString(substring));
+	}
+
+	public void assertNotContains(String substring) {
+		assertThat(content, not(containsString(substring)));
 	}
 
 	public void assertLookingAt(String regex) {

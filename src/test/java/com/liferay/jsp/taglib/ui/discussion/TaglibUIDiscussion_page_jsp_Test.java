@@ -59,9 +59,11 @@ import com.liferay.portlet.blogs.service.BlogsEntryLocalService;
 import com.liferay.portlet.blogs.service.BlogsEntryLocalServiceUtil;
 import com.liferay.portlet.blogs.service.permission.BlogsEntryPermission;
 import com.liferay.portlet.blogs.util.BlogsUtil;
+import com.liferay.portlet.messageboards.MBSettings;
 import com.liferay.portlet.messageboards.model.MBMessage;
 import com.liferay.portlet.messageboards.model.MBMessageDisplay;
 import com.liferay.portlet.messageboards.model.MBThread;
+import com.liferay.portlet.messageboards.model.MBTreeWalker;
 import com.liferay.portlet.messageboards.service.MBMessageLocalService;
 import com.liferay.portlet.messageboards.service.MBMessageLocalServiceUtil;
 import com.liferay.portlet.messageboards.service.permission.MBDiscussionPermission;
@@ -88,6 +90,7 @@ import com.liferay.test.portal.jsp.LiferayJSPTestSetUp;
 	BlogsUtil.class, BlogsPortletInstanceSettings.class, BlogsSettings.class,
 	BlogsEntryPermission.class, BlogsEntryLocalServiceUtil.class,
 	SessionClicks.class,
+	MBSettings.class,
 	MBMessageLocalServiceUtil.class, MBDiscussionPermission.class,
 	SubscriptionLocalServiceUtil.class,
 	RatingsEntryLocalServiceUtil.class, RatingsStatsLocalServiceUtil.class,
@@ -105,6 +108,7 @@ public class TaglibUIDiscussion_page_jsp_Test
 		engine.setURI("/html/taglib/ui/discussion/page.jsp");
 
 		liferayJSP.setUp();
+		vmth.setUp();
 
 		new Discussion_page_jsp_TestSetUp().setUp();
 
@@ -121,7 +125,11 @@ public class TaglibUIDiscussion_page_jsp_Test
 
 		mockStatic(SessionClicks.class);
 
-		setUpMBMessageLocalServiceUtil();
+		setUpMBMessageLocalService();
+
+		setUpDiscussionMessageDisplay();
+
+		setUpMBDiscussionPermission();
 
 		ServletTester tester = engine.getServletTester();
 		tester.setAttribute("company", company);
@@ -143,66 +151,72 @@ public class TaglibUIDiscussion_page_jsp_Test
 	}
 
 	@Test
-	public void testDiscussionTaglib() throws Exception {
-		engine.execute();
-	}
-
-	@Test
 	public void testInTrash() throws Exception {
+		setUpMBMessageLocalServiceUtil();
+
 		when(trash.isInTrash(anyString(), anyLong())).thenReturn(true);
 
-		ResponseContent response = engine.execute();
+		render();
 
-		response.assertContains(
-			"commenting-is-disabled-because-this-entry-is-in-the-recycle-bin");
+		assertContains("commenting-is-disabled-because-this-entry-is-in-the-recycle-bin");
 	}
 
 	@Test
 	public void testBeTheFirst() throws Exception {
-		when_getThreadMessagesCount(1);
+		setUpNoCommentsYet();
 
-		ResponseContent response = engine.execute();
+		render();
 
-		response.assertContains("be-the-first");
+		assertContains("be-the-first");
+	}
+
+	protected void setUpNoCommentsYet() throws Exception {
+		setUpMessageCount(1);
 	}
 
 	@Test
 	public void testAddComment() throws Exception {
-		when_getThreadMessagesCount(2);
+		setUpCommentedAlready();
 
-		ResponseContent response = engine.execute();
+		render();
 
-		response.assertContains(
-			"<span class=\"taglib-text \">add-comment</span>");
+		assertContains("<span class=\"taglib-text \">add-comment</span>");
+	}
+
+	protected void setUpCommentedAlready() throws Exception {
+		setUpMessageCount(2);
 	}
 
 	@Test
-	public void testMessagesRendered() throws Exception {
-		MBMessage m1 = newMBMessage(), m2 = newMBMessage();
+	public void testMBMessageLocalServiceCommentsNotVisible() throws Exception {
+		setUpMBMessageLocalServiceUtil();
 
-		String body = RandomTestUtil.randomString();
+		setUpMessageCount(0);
 
-		when(m2.getBody()).thenReturn(body);
+		render();
 
-		List<MBMessage> messages = Arrays.asList(m1, m2);
+		assertCommentsNotVisible();
+	}
 
-		int messagesCount = messages.size();
-		when_getThreadMessagesCount(messagesCount);
+	@Test
+	public void testMBMessageLocalServiceCommentsRendered() throws Exception {
+		setUpMBMessageLocalServiceUtil();
 
-		when(mbMessageLocalService.getThreadRepliesMessages(
-			anyLong(), anyInt(), anyInt(), anyInt())).thenReturn(
-			messages);
+		setUpMBMessageLocalServiceDiscussionWithSingleComment();
 
-		ResponseContent response = engine.execute();
+		when(singleComment.getBody()).thenReturn(RandomTestUtil.randomString());
 
-		String randomNamespace = find_randomNamespace(response);
+		render();
 
-		response.assertContains("<textarea class=\"field form-control\"  " +
-			"id=\"" + randomNamespace + "editReplyBody" + messagesCount +
+		int singleCommentSeq = getMessageCount();
+		String randomNamespace = find_randomNamespace();
+
+		assertContains("<textarea class=\"field form-control\"  " +
+			"id=\"" + randomNamespace + "editReplyBody" + singleCommentSeq +
 			"\"  " +
-			"name=\"editReplyBody" + messagesCount + "\"     " +
+			"name=\"editReplyBody" + singleCommentSeq + "\"     " +
 			"title=\"reply-body\"  wrap=\"soft\" style=\"height: 100px;\" >" +
-			body +
+			singleComment.getBody() +
 			"</textarea>");
 
 		String href = HtmlUtil.escapeAttribute(
@@ -211,10 +225,10 @@ public class TaglibUIDiscussion_page_jsp_Test
 				")) { " +
 				randomNamespace +
 				"deleteMessage(" +
-				messagesCount +
+				singleCommentSeq +
 				"); } else { self.focus(); }");
 
-		response.assertLookingAt(".*" +
+		c.assertLookingAt(".*" +
 			Pattern.quote(
 				"<a href=\"" + href + "\" class=\" taglib-icon\" id=\"") +
 			"........" +
@@ -224,7 +238,161 @@ public class TaglibUIDiscussion_page_jsp_Test
 					"<span class=\"taglib-text \">delete</span>"));
 	}
 
-	protected String find_randomNamespace(ResponseContent response) {
+	@Test
+	public void testMBMessageLocalServiceCommentsVisible() throws Exception {
+		setUpMBMessageLocalServiceUtil();
+
+		setUpMBMessageLocalServiceDiscussionWithSingleComment();
+
+		render();
+
+		assertCommentsVisible();
+	}
+
+	@Test
+	public void testMBTreeWalkerCommentsNotVisible() throws Exception {
+		setUpMBTreeWalker();
+
+		when(mbTreeWalker.getMessages()).thenReturn(Arrays.<MBMessage> asList());
+
+		setUpMBTreeWalkerNoChildren();
+
+		render();
+
+		assertCommentsNotVisible();
+	}
+
+	@Test
+	public void testMBTreeWalkerCommentsVisible() throws Exception {
+		setUpMBTreeWalker();
+
+		setUpMBTreeWalkerDiscussionWithSingleComment();
+
+		setUpMBTreeWalkerNoChildren();
+
+		render();
+
+		assertCommentsVisible();
+	}
+
+	@Test
+	public void testMBTreeWalkerOneChild() throws Exception {
+		setUpMBTreeWalker();
+
+		setUpMBTreeWalkerDiscussionWithSingleComment();
+
+		when_getChildrenRange(rootMessage, 1, 2);
+		when_getChildrenRange(singleComment, 0, 0);
+
+		long childMessageId = RandomTestUtil.randomLong();
+		when(singleComment.getMessageId()).thenReturn(childMessageId);
+
+		render();
+
+		assertContains(vmth.messageCell(0, "l", childMessageId));
+	}
+
+	@Test
+	public void testMBTreeWalkerTwoChildren() throws Exception {
+		setUpMBTreeWalker();
+
+		setUpMBTreeWalkerDiscussionWithSingleComment();
+
+		MBMessage parent = rootMessage;
+		MBMessage childA = singleComment;
+		MBMessage childB = mockMBMessage();
+
+		messages = Arrays.asList(parent, childA, childB);
+		when(mbTreeWalker.getMessages()).thenReturn(messages);
+
+		when_getChildrenRange(parent, 1, 3);
+		when_getChildrenRange(childA, 0, 0);
+		when_getChildrenRange(childB, 0, 0);
+
+		long childAMessageId = RandomTestUtil.randomLong();
+		when(childA.getMessageId()).thenReturn(childAMessageId);
+
+		long childBMessageId = RandomTestUtil.randomLong();
+		when(childB.getMessageId()).thenReturn(childBMessageId);
+
+		render();
+
+		assertContains(vmth.messageCell(0, "t", childAMessageId));
+		assertContains(vmth.messageCell(0, "l", childBMessageId));
+	}
+
+	@Test
+	public void testMBTreeWalkerTable() throws Exception {
+		setUpMBTreeWalker();
+
+		setUpMBTreeWalkerDiscussionWithSingleComment();
+
+		setUpMBTreeWalkerNoChildren();
+
+		render();
+
+		assertContains("<table class=\"table table-bordered table-hover table-striped tree-walker\">");
+	}
+
+	private void render() throws Exception {
+		this.c = engine.execute();
+	}
+
+	private void assertContains(String s) {
+		c.assertContains(s);
+	}
+
+	protected void assertCommentsVisible() {
+		c.assertContains(evidenceCommentsVisible());
+	}
+
+	protected void assertCommentsNotVisible() {
+		c.assertNotContains(evidenceCommentsVisible());
+	}
+
+	protected String evidenceCommentsVisible() {
+		String randomNamespace = find_randomNamespace();
+		return "<a name=\"" + randomNamespace + "messages_top\"></a>";
+	}
+
+	protected void setUpDiscussionWithSingleComment() {
+		discussionPlaceholder = mockMBMessage();
+		singleComment = mockMBMessage();
+		messages = Arrays.asList(discussionPlaceholder, singleComment);
+	}
+
+	protected void setUpMBMessageLocalServiceDiscussionWithSingleComment()
+		throws Exception {
+		setUpDiscussionWithSingleComment();
+
+		int messagesCount = messages.size();
+		setUpMessageCount(messagesCount);
+
+		when(mbMessageLocalService.getThreadRepliesMessages(
+			anyLong(), anyInt(), anyInt(), anyInt())).thenReturn(
+			messages);
+	}
+
+	protected void setUpMBTreeWalker() {
+		when(mbMessageDisplay.getTreeWalker()).thenReturn(mbTreeWalker);
+		when(mbTreeWalker.getRoot()).thenReturn(rootMessage);
+	}
+
+	protected void setUpMBTreeWalkerDiscussionWithSingleComment() {
+		setUpDiscussionWithSingleComment();
+
+		when(mbTreeWalker.getMessages()).thenReturn(messages);
+	}
+
+	protected void setUpMBTreeWalkerNoChildren() {
+		when_getChildrenRange(rootMessage, 0, 0);
+	}
+
+	private void when_getChildrenRange(MBMessage message, int... childrenRange) {
+		when(mbTreeWalker.getChildrenRange(message)).thenReturn(childrenRange);
+	}
+
+	protected String find_randomNamespace() {
 		String regex =
 			Pattern.quote(
 				"<input  class=\"field form-control\"  "
@@ -237,43 +405,28 @@ public class TaglibUIDiscussion_page_jsp_Test
 
 		Matcher matcher =
 			Pattern.compile(regex)
-				.matcher(response.content());
+				.matcher(c.content());
 		matcher.find();
 		return matcher.group(1);
 	}
 
-	protected MBMessage newMBMessage() {
+	protected MBMessage mockMBMessage() {
 		MBMessage m = mock(MBMessage.class);
 		when(m.getModifiedDate()).thenReturn(new Date());
 		return m;
 	}
 
-	protected void when_getThreadMessagesCount(int value) {
+	protected void setUpMessageCount(int value) throws Exception {
+		setUpMBMessageLocalServiceUtil();
+
 		when(
 			mbMessageLocalService.getThreadMessagesCount(
 				anyLong(), anyInt())).thenReturn(value);
 	}
 
-	private @Mock
-	MBMessageLocalService mbMessageLocalService;
-
-	private @Mock
-	MBMessageDisplay mbMessageDisplay;
-
-	private @Mock
-	SubscriptionLocalService subscriptionLocalService;
-
-	@Mock
-	RatingsEntryLocalService ratingsEntryLocalService;
-
-	@Mock
-	RatingsStatsLocalService ratingsStatsLocalService;
-
-	@Mock
-	WorkflowDefinitionLinkLocalService workflowDefinitionLinkLocalService;
-
-	@Mock
-	private Company company;
+	private int getMessageCount() {
+		return messages.size();
+	}
 
 	private void setUpWorkflowDefinitionLinkLocalServiceUtil() {
 		mockStatic(
@@ -293,10 +446,28 @@ public class TaglibUIDiscussion_page_jsp_Test
 	}
 
 	protected void setUpMBMessageLocalServiceUtil() throws PortalException {
-		mockStatic(MBMessageLocalServiceUtil.class, Mockito.CALLS_REAL_METHODS);
+		long rootMessageId = RandomTestUtil.randomLong();
+
+		when(thread.getRootMessageId()).thenReturn(rootMessageId);
+
+		when(mbMessageLocalService.getMessage(rootMessageId)).thenReturn(
+			rootMessage);
+	}
+
+	protected void setUpMBDiscussionPermission() {
+		mockStatic(MBDiscussionPermission.class, Mockito.CALLS_REAL_METHODS);
 		stub(method(
-			MBMessageLocalServiceUtil.class, "getService")).toReturn(
-			mbMessageLocalService);
+			MBDiscussionPermission.class, "contains",
+			PermissionChecker.class, Long.TYPE, Long.TYPE,
+			String.class, Long.TYPE, Long.TYPE, Long.TYPE,
+			String.class)).toReturn(true);
+		stub(method(
+			MBDiscussionPermission.class, "contains",
+			PermissionChecker.class, Long.TYPE, Long.TYPE,
+			String.class, Long.TYPE, Long.TYPE, String.class)).toReturn(true);
+	}
+
+	protected void setUpDiscussionMessageDisplay() throws PortalException {
 		when(
 			mbMessageLocalService.getDiscussionMessageDisplay(
 				anyLong(), anyLong(), anyString(),
@@ -304,15 +475,13 @@ public class TaglibUIDiscussion_page_jsp_Test
 			.thenReturn(mbMessageDisplay);
 
 		when(mbMessageDisplay.getThread()).thenReturn(thread);
+	}
 
-		when(mbMessageLocalService.getMessage(anyLong())).thenReturn(
-			rootMessage);
-
-		mockStatic(MBDiscussionPermission.class, Mockito.CALLS_REAL_METHODS);
+	protected void setUpMBMessageLocalService() {
+		mockStatic(MBMessageLocalServiceUtil.class, Mockito.CALLS_REAL_METHODS);
 		stub(method(
-			MBDiscussionPermission.class, "contains",
-			PermissionChecker.class, Long.TYPE, Long.TYPE,
-			String.class, Long.TYPE, Long.TYPE, String.class)).toReturn(true);
+			MBMessageLocalServiceUtil.class, "getService")).toReturn(
+			mbMessageLocalService);
 	}
 
 	protected void setUpBlogsEntryLocalServiceUtil() throws PortalException {
@@ -361,9 +530,33 @@ public class TaglibUIDiscussion_page_jsp_Test
 		new HttpUtil().setHttp(mock(Http.class));
 	}
 
+	private @Mock
+	MBMessageLocalService mbMessageLocalService;
+
+	private @Mock
+	MBMessageDisplay mbMessageDisplay;
+
+	private @Mock
+	SubscriptionLocalService subscriptionLocalService;
+
+	@Mock
+	RatingsEntryLocalService ratingsEntryLocalService;
+
+	@Mock
+	RatingsStatsLocalService ratingsStatsLocalService;
+
+	@Mock
+	WorkflowDefinitionLinkLocalService workflowDefinitionLinkLocalService;
+
+	@Mock
+	private Company company;
+
 	JSPTestEngine engine = new JSPTestEngine(this);
 
-	LiferayJSPTestSetUp liferayJSP = new LiferayJSPTestSetUp(engine);
+	private LiferayJSPTestSetUp liferayJSP = new LiferayJSPTestSetUp(engine);
+
+	private TaglibUIDiscussion_view_message_thread_jsp_TestHelper vmth =
+		new TaglibUIDiscussion_view_message_thread_jsp_TestHelper(liferayJSP);
 
 	@Mock
 	PortletDisplay portletDisplay;
@@ -375,11 +568,21 @@ public class TaglibUIDiscussion_page_jsp_Test
 	MBThread thread;
 
 	@Mock
-	MBMessage rootMessage;
+	private MBMessage rootMessage;
+
+	private MBMessage discussionPlaceholder;
+
+	private MBMessage singleComment;
 
 	@Mock
 	private Trash trash;
 
 	private UserDisplayTagTestSetUp userDisplayTagTestSetUp;
 
+	private ResponseContent c;
+
+	@Mock
+	private MBTreeWalker mbTreeWalker;
+
+	private List<MBMessage> messages;
 }
