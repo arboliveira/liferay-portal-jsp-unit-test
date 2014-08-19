@@ -1,22 +1,11 @@
 
 package com.liferay.jsp.taglib.ui.discussion;
 
-import static org.mockito.Mockito.CALLS_REAL_METHODS;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.powermock.api.mockito.PowerMockito.mockStatic;
-import static org.powermock.api.support.membermodification.MemberMatcher.method;
-import static org.powermock.api.support.membermodification.MemberModifier.stub;
-
-import javax.portlet.ResourceURL;
-
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import com.liferay.portal.kernel.settings.SettingsFactory;
-import com.liferay.portal.kernel.settings.SettingsFactoryUtil;
 import com.liferay.portal.util.test.RandomTestUtil;
-import com.liferay.portlet.messageboards.MBSettings;
 import com.liferay.test.portal.jsp.LiferayJSPTestSetUp;
 
 public class TaglibUIDiscussion_view_message_thread_jsp_TestHelper {
@@ -29,14 +18,7 @@ public class TaglibUIDiscussion_view_message_thread_jsp_TestHelper {
 	void setUp() {
 		MockitoAnnotations.initMocks(this);
 
-		setUp_message_boards_init_jsp();
-
 		setUpPathThemeImages();
-	}
-
-	protected void setUp_message_boards_init_jsp() {
-		setUpMBSettings();
-		setUpResourceURL();
 	}
 
 	String messageCell(
@@ -63,24 +45,6 @@ public class TaglibUIDiscussion_view_message_thread_jsp_TestHelper {
 
 	static String messageURLEvidence(String namespace, long messageId) {
 		return "#" + namespace + "message_" + messageId;
-	}
-
-	private void setUpMBSettings() {
-		new SettingsFactoryUtil().setSettingsFactory(
-			mock(SettingsFactory.class));
-
-		mockStatic(MBSettings.class, CALLS_REAL_METHODS);
-
-		MBSettings mbSettings = mock(MBSettings.class);
-
-		stub(method(MBSettings.class, "getInstance",
-			Long.TYPE
-			)).toReturn(mbSettings);
-	}
-
-	private void setUpResourceURL() {
-		when(liferayJSP.liferayPortletResponse.createResourceURL()).thenReturn(
-			mock(ResourceURL.class));
 	}
 
 	private void setUpPathThemeImages() {

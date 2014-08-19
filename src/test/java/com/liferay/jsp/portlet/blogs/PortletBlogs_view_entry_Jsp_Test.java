@@ -25,6 +25,7 @@ import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
 import com.liferay.portal.kernel.bean.BeanParamUtil;
+import com.liferay.portal.kernel.comment.CommentManagerUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.model.Company;
 import com.liferay.portal.model.User;
@@ -50,6 +51,7 @@ import com.liferay.portlet.blogs.service.BlogsEntryLocalService;
 import com.liferay.portlet.blogs.service.BlogsEntryLocalServiceUtil;
 import com.liferay.portlet.blogs.service.permission.BlogsEntryPermission;
 import com.liferay.portlet.blogs.util.BlogsUtil;
+import com.liferay.portlet.messageboards.comment.MBCommentManagerImpl;
 import com.liferay.portlet.messageboards.model.MBMessage;
 import com.liferay.portlet.messageboards.model.MBMessageDisplay;
 import com.liferay.portlet.messageboards.model.MBThread;
@@ -72,7 +74,7 @@ import com.liferay.test.portal.jsp.LiferayJSPTestSetUp;
 	PortletURLUtil.class,
 	BlogsUtil.class, BlogsPortletInstanceSettings.class, BlogsSettings.class,
 	BlogsEntryPermission.class, BlogsEntryLocalServiceUtil.class,
-	BeanParamUtil.class, SessionClicks.class,
+	BeanParamUtil.class, CommentManagerUtil.class, SessionClicks.class,
 	MBMessageLocalServiceUtil.class, MBDiscussionPermission.class,
 	SubscriptionLocalServiceUtil.class,
 	WorkflowDefinitionLinkLocalServiceUtil.class
@@ -111,6 +113,8 @@ public class PortletBlogs_view_entry_Jsp_Test
 		setUpSubscriptionLocalServiceUtil();
 
 		setUpWorkflowDefinitionLinkLocalServiceUtil();
+
+		setUpCommentManager();
 	}
 
 	@Test
@@ -137,6 +141,15 @@ public class PortletBlogs_view_entry_Jsp_Test
 		ResponseContent response = engine.execute();
 
 		response.assertContains("be-the-first");
+	}
+
+	private void setUpCommentManager() {
+		MBCommentManagerImpl commentManager = new MBCommentManagerImpl();
+		commentManager.setMBMessageLocalService(mbMessageLocalService);
+		stub(method(
+			CommentManagerUtil.class, "getCommentManager"
+			)).toReturn(
+			commentManager);
 	}
 
 	private @Mock

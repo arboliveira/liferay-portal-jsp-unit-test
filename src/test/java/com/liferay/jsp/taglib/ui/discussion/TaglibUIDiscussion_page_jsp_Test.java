@@ -36,7 +36,9 @@ import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 import org.powermock.reflect.Whitebox;
 
+import com.liferay.portal.comment.DummyCommentManagerImpl;
 import com.liferay.portal.kernel.comment.CommentManager;
+import com.liferay.portal.kernel.comment.CommentManagerUtil;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.util.HtmlUtil;
@@ -69,7 +71,6 @@ import com.liferay.portlet.blogs.service.BlogsEntryLocalService;
 import com.liferay.portlet.blogs.service.BlogsEntryLocalServiceUtil;
 import com.liferay.portlet.blogs.service.permission.BlogsEntryPermission;
 import com.liferay.portlet.blogs.util.BlogsUtil;
-import com.liferay.portlet.messageboards.MBSettings;
 import com.liferay.portlet.messageboards.comment.MBCommentManagerImpl;
 import com.liferay.portlet.messageboards.model.MBMessage;
 import com.liferay.portlet.messageboards.model.MBMessageDisplay;
@@ -98,16 +99,17 @@ import com.liferay.test.portal.jsp.LiferayJSPTestSetUp;
 	AssetTagLocalServiceUtil.class, AssetTagServiceUtil.class,
 	AssetVocabularyServiceUtil.class,
 	AssetCategoryServiceUtil.class,
-	PortletURLUtil.class,
 	BlogsUtil.class, BlogsPortletInstanceSettings.class, BlogsSettings.class,
 	BlogsEntryPermission.class, BlogsEntryLocalServiceUtil.class,
-	SearchContainer.class, SessionClicks.class,
-	MBSettings.class,
+	CommentManagerUtil.class,
 	MBMessageLocalServiceUtil.class, MBDiscussionPermission.class,
-	SubscriptionLocalServiceUtil.class,
+	ModelHintsUtil.class,
+	PortletURLUtil.class,
 	RatingsEntryLocalServiceUtil.class, RatingsStatsLocalServiceUtil.class,
-	WorkflowDefinitionLinkLocalServiceUtil.class,
-	UserLocalServiceUtil.class, ModelHintsUtil.class
+	SearchContainer.class, SessionClicks.class,
+	SubscriptionLocalServiceUtil.class,
+	UserLocalServiceUtil.class,
+	WorkflowDefinitionLinkLocalServiceUtil.class
 })
 @RunWith(PowerMockRunner.class)
 public class TaglibUIDiscussion_page_jsp_Test
@@ -155,19 +157,13 @@ public class TaglibUIDiscussion_page_jsp_Test
 		setUpRatingsEntryLocalServiceUtil();
 		setUpRatingsStatsLocalServiceUtil();
 
-		commentManager = createCommentManager();
+		setUpCommentManager();
 	}
 
 	@Override
 	public void prepare(HttpServletRequest request) {
 		liferayJSP.prepareRequest(request);
 		userDisplayTagTestSetUp.setUpRequest(request);
-
-		/*
-		 * request.setAttribute(
-		 * "liferay-ui:discussion:discussionViewHelperFactory", new
-		 * DiscussionViewHelperFactoryImpl(commentManager));
-		 */
 
 		request.setAttribute(
 			"liferay-ui:discussion:hideControls",
@@ -199,6 +195,15 @@ public class TaglibUIDiscussion_page_jsp_Test
 		setUpDiscussionPageMessageCount(1);
 
 		removePermission(ActionKeys.VIEW);
+
+		render();
+
+		c.assertNotContains("<div class=\"taglib-discussion\"");
+	}
+
+	@Test
+	public void test_canViewDiscussion_false_Dummy() throws Exception {
+		setUpCommentManager(new DummyCommentManagerImpl());
 
 		render();
 
@@ -581,12 +586,6 @@ public class TaglibUIDiscussion_page_jsp_Test
 				" table-hover table-striped tree-walker\">");
 	}
 
-	private MBCommentManagerImpl createCommentManager() {
-		MBCommentManagerImpl mbCommentManagerImpl = new MBCommentManagerImpl();
-		mbCommentManagerImpl.setMBMessageLocalService(mbMessageLocalService);
-		return mbCommentManagerImpl;
-	}
-
 	private String find_randomNamespace() {
 		String regex =
 			Pattern.quote(
@@ -626,6 +625,19 @@ public class TaglibUIDiscussion_page_jsp_Test
 
 	private void setUpCommentedAlready() throws Exception {
 		setUpDiscussionPageMessageCount(2);
+	}
+
+	private void setUpCommentManager() {
+		MBCommentManagerImpl commentManager = new MBCommentManagerImpl();
+		commentManager.setMBMessageLocalService(mbMessageLocalService);
+		setUpCommentManager(commentManager);
+	}
+
+	private void setUpCommentManager(CommentManager commentManager) {
+		stub(method(
+			CommentManagerUtil.class, "getCommentManager"
+			)).toReturn(
+			commentManager);
 	}
 
 	private void setUpNoCommentsYet() throws Exception {
@@ -846,8 +858,6 @@ public class TaglibUIDiscussion_page_jsp_Test
 	 */
 
 	final HashSet<String> removedPermissions = new HashSet<String>();
-
-	CommentManager commentManager;
 
 	private @Mock
 	MBMessageLocalService mbMessageLocalService;

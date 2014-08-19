@@ -29,14 +29,14 @@ import org.powermock.core.classloader.annotations.PowerMockIgnore;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
+import com.liferay.portal.comment.CommentTreeNodeDisplayImpl;
+import com.liferay.portal.comment.DiscussionWebKeys;
 import com.liferay.portal.kernel.util.FastDateFormatFactory;
 import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.StringUtil;
-import com.liferay.portal.util.WebKeys;
 import com.liferay.portal.util.test.RandomTestUtil;
 import com.liferay.portlet.PortletURLUtil;
-import com.liferay.portlet.messageboards.MBSettings;
 import com.liferay.portlet.messageboards.model.MBMessage;
 import com.liferay.portlet.messageboards.model.MBTreeWalker;
 import com.liferay.test.jsp.JSPTestEngine;
@@ -47,7 +47,6 @@ import com.liferay.test.portal.jsp.LiferayJSPTestSetUp;
 @PowerMockIgnore("javax.tools.*")
 @PrepareForTest({
 	PortletURLUtil.class,
-	MBSettings.class,
 	FastDateFormatFactoryUtil.class
 })
 @RunWith(PowerMockRunner.class)
@@ -75,18 +74,9 @@ public class TaglibUIDiscussion_view_message_thread_jsp_Test
 		liferayJSP.prepareRequest(request);
 
 		request.setAttribute(
-			WebKeys.MESSAGE_BOARDS_TREE_WALKER_LAST_NODE,
-			Boolean.valueOf(_lastNode));
-
-		request.setAttribute(
-			WebKeys.MESSAGE_BOARDS_TREE_WALKER_DEPTH,
-			Integer.valueOf(_depth));
-
-		request.setAttribute(
-			WebKeys.MESSAGE_BOARDS_TREE_WALKER_CUR_MESSAGE, mbMessage);
-
-		request.setAttribute(
-			WebKeys.MESSAGE_BOARDS_TREE_WALKER, mbTreeWalker);
+			DiscussionWebKeys.COMMENT_TREE_NODE_DISPLAY,
+			new CommentTreeNodeDisplayImpl(
+				_depth, _lastNode, mbMessage, mbTreeWalker));
 
 		guardAgainstRecursion = true;
 	}
