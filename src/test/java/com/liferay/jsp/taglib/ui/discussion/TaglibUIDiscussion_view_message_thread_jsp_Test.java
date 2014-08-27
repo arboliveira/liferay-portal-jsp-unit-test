@@ -37,6 +37,7 @@ import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.util.test.RandomTestUtil;
 import com.liferay.portlet.PortletURLUtil;
+import com.liferay.portlet.messageboards.comment.MBCommentTreeNodeImpl;
 import com.liferay.portlet.messageboards.model.MBMessage;
 import com.liferay.portlet.messageboards.model.MBTreeWalker;
 import com.liferay.test.jsp.JSPTestEngine;
@@ -76,7 +77,8 @@ public class TaglibUIDiscussion_view_message_thread_jsp_Test
 		request.setAttribute(
 			DiscussionWebKeys.COMMENT_TREE_NODE_DISPLAY,
 			new CommentTreeNodeDisplayImpl(
-				_depth, _lastNode, mbMessage, mbTreeWalker));
+				_depth, _lastNode,
+				new MBCommentTreeNodeImpl(mbMessage, mbTreeWalker)));
 
 		guardAgainstRecursion = true;
 	}
@@ -175,7 +177,7 @@ public class TaglibUIDiscussion_view_message_thread_jsp_Test
 
 	@Test
 	public void testNoChildren() throws Exception {
-		whenGetChildrenRange(mbMessage, 0, 0);
+		whenGetChildren(mbMessage);
 
 		render();
 
@@ -192,11 +194,7 @@ public class TaglibUIDiscussion_view_message_thread_jsp_Test
 
 		MBMessage child = mockMBMessage(childMessageId);
 
-		when(mbTreeWalker.getMessages()).thenReturn(
-			Arrays.asList(child));
-
-		whenGetChildrenRange(parent, 0, 1);
-		whenGetChildrenRange(child, 0, 0);
+		whenGetChildren(parent, child);
 
 		render(parent);
 
@@ -215,12 +213,7 @@ public class TaglibUIDiscussion_view_message_thread_jsp_Test
 		long childBMessageId = RandomTestUtil.randomLong();
 		MBMessage childB = mockMBMessage(childBMessageId);
 
-		when(mbTreeWalker.getMessages()).thenReturn(
-			Arrays.asList(childA, childB));
-
-		whenGetChildrenRange(parent, 0, 2);
-		whenGetChildrenRange(childA, 0, 0);
-		whenGetChildrenRange(childB, 0, 0);
+		whenGetChildren(parent, childA, childB);
 
 		render(parent);
 
@@ -243,13 +236,8 @@ public class TaglibUIDiscussion_view_message_thread_jsp_Test
 		long childA1MessageId = RandomTestUtil.randomLong();
 		MBMessage childA1 = mockMBMessage(childA1MessageId);
 
-		when(mbTreeWalker.getMessages()).thenReturn(
-			Arrays.asList(childA, childB, childA1));
-
-		whenGetChildrenRange(parent, 0, 2);
-		whenGetChildrenRange(childA, 2, 3);
-		whenGetChildrenRange(childB, 0, 0);
-		whenGetChildrenRange(childA1, 0, 0);
+		whenGetChildren(parent, childA, childB);
+		whenGetChildren(childA, childA1);
 
 		render(parent);
 
@@ -272,8 +260,9 @@ public class TaglibUIDiscussion_view_message_thread_jsp_Test
 		when(message.getMessageId()).thenReturn(messageId);
 	}
 
-	private void whenGetChildrenRange(MBMessage message, int... childrenRange) {
-		when(mbTreeWalker.getChildrenRange(message)).thenReturn(childrenRange);
+	private void whenGetChildren(MBMessage message, MBMessage... children) {
+		when(mbTreeWalker.getChildren(message)).thenReturn(
+			Arrays.asList(children));
 	}
 
 	private void whenGetDateTime(Format format) {
@@ -361,7 +350,6 @@ public class TaglibUIDiscussion_view_message_thread_jsp_Test
 
 	private void setUpMBMessage() {
 		whenGetModifiedDate(mbMessage, new Date());
-		whenGetChildrenRange(mbMessage, 0, 0);
 	}
 
 	private boolean guardAgainstRecursion;
@@ -387,4 +375,5 @@ public class TaglibUIDiscussion_view_message_thread_jsp_Test
 	private MBTreeWalker mbTreeWalker;
 
 	private ResponseContent c;
+
 }

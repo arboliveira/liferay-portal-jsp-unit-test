@@ -410,10 +410,7 @@ public class TaglibUIDiscussion_page_jsp_Test
 	public void test_getTopmostThreadedReplies_oneChild() throws Exception {
 		setUpDiscussionTreeDiscussionWithSingleComment();
 
-		when_getChildrenRange(rootMessage, 1, 2);
-		when_getChildrenRange(singleComment, 0, 0);
-
-		// when_getChildren(rootMessage, singleComment);
+		when_getChildren(rootMessage, singleComment);
 
 		long childMessageId = RandomTestUtil.randomLong();
 		when(singleComment.getMessageId()).thenReturn(childMessageId);
@@ -676,11 +673,7 @@ public class TaglibUIDiscussion_page_jsp_Test
 
 		setMessages(parent, childA, childB);
 
-		when_getChildrenRange(parent, 1, 3);
-		when_getChildrenRange(childA, 0, 0);
-		when_getChildrenRange(childB, 0, 0);
-
-		// when_getChildren(parent, childA, childB);
+		when_getChildren(parent, childA, childB);
 
 		when(childA.getMessageId()).thenReturn(childAMessageId);
 		when(childB.getMessageId()).thenReturn(childBMessageId);
@@ -715,9 +708,7 @@ public class TaglibUIDiscussion_page_jsp_Test
 	}
 
 	private void setUpTreeNoChildren() {
-		when_getChildrenRange(rootMessage, 0, 0);
-
-		// when_getChildren(rootMessage);
+		when_getChildren(rootMessage);
 	}
 
 	private void setUpDiscussionPageMessageCount(int value) throws Exception {
@@ -847,15 +838,10 @@ public class TaglibUIDiscussion_page_jsp_Test
 		new HttpUtil().setHttp(mock(Http.class));
 	}
 
-	private void when_getChildrenRange(MBMessage message, int... childrenRange) {
-		when(mbTreeWalker.getChildrenRange(message)).thenReturn(childrenRange);
+	private void when_getChildren(MBMessage message, MBMessage... children) {
+		when(mbTreeWalker.getChildren(message)).thenReturn(
+			Arrays.asList(children));
 	}
-
-	/*
-	 * private void when_getChildren(MBMessage message, MBMessage... children) {
-	 * when(mbTreeWalker.getChildren(message)).thenReturn(
-	 * Arrays.asList(children)); }
-	 */
 
 	final HashSet<String> removedPermissions = new HashSet<String>();
 
@@ -916,4 +902,5 @@ public class TaglibUIDiscussion_page_jsp_Test
 	private List<MBMessage> messages;
 
 	private boolean _hideControls;
+
 }
